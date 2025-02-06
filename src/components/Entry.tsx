@@ -11,7 +11,7 @@ interface EntryProps {
 export default function Entry({ date, entry, stats, onTagClick }: EntryProps) {
   const type = getEntryType(entry);
   const tags = Object.keys(entry.tags || []);
-  const title = entry.resolved_title || entry.given_title || entry.resolved_url;
+  const title = entry.given_title || entry.resolved_title || entry.resolved_url;
   const isTopEntry = entry.tags && "top" in entry.tags;
 
   const Star = () => (isTopEntry ? <span className="star">★</span> : null);

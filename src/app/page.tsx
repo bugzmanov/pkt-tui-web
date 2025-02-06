@@ -16,6 +16,55 @@ import data from "@/data.json";
 import { Entry as EntryType } from "@/types";
 import TypeModal from "@/components/TypeModal";
 import SiteModal from "@/components/SiteModal";
+import path from "path";
+import deltaContent from "@/delta.jsonl";
+// const fs = require("fs");
+
+function getData(): EntryType[] {
+  // Load base data
+  // Load delta data
+  // const deltaPath = path.join(process.cwd(), "src/delta.json");
+  // const deltaContent = fs.readFileSync(deltaPath, "utf8");
+
+  const deltaEntries = deltaContent
+    .split("\n")
+    .filter((line) => line.trim())
+    .map((line) => JSON.parse(line));
+
+  // Separate deletion records from actual delta entries
+  const deletionIds = new Set(
+    deltaEntries
+      .filter((entry) => entry.status === "2")
+      .map((entry) => entry.item_id),
+  );
+
+  const baseEntries = (Object.values(data.list) as EntryType[]).filter(
+    (entry) => !deletionIds.has(entry.item_id),
+  ) as EntryType[];
+  //
+  // Combine and sort all entries
+  const newDeltaEntries = deltaEntries.filter(
+    (entry) => entry.status !== "2",
+  ) as EntryType[];
+
+  // Merge and sort all entries
+  const entriesMap = new Map();
+
+  [...baseEntries, ...newDeltaEntries].forEach((entry) => {
+    const existingEntry = entriesMap.get(entry.item_id);
+    if (
+      !existingEntry ||
+      Number(entry.time_added) > Number(existingEntry.time_added)
+    ) {
+      entriesMap.set(entry.item_id, entry);
+    }
+  });
+
+  // Convert map back to array and sort
+  return Array.from(entriesMap.values()).sort(
+    (a, b) => Number(b.time_added) - Number(a.time_added),
+  );
+}
 
 export default function Home() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -24,9 +73,9 @@ export default function Home() {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [selectedSite, setSelectedSite] = useState<string | null>(null);
-  const entries = (Object.values(data.list) as EntryType[]).sort(
+  const entries = getData(); /*(Object.values(data.list) as EntryType[]).sort(
     (a, b) => Number(b.time_added) - Number(a.time_added),
-  );
+  );*/
 
   // Filter entries by selected tag, type and site
   const filteredEntries = entries.filter((entry) => {
